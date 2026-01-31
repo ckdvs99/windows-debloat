@@ -1,0 +1,11 @@
+# Logs
+*.log
+bloat_enforcement.log
+
+# User-specific files
+*.user
+*.suo
+
+# Temp files
+*.tmp
+*~
