@@ -1,6 +1,6 @@
-# Windows 11 Debloat & Optimization Scripts
+# Windows 11 Debloat & Gaming Optimization Scripts
 
-A collection of PowerShell scripts to disable unnecessary Windows services, telemetry, and resource-hogging features. Designed for power users with modern hardware (SSD + plenty of RAM).
+A collection of PowerShell scripts to disable unnecessary Windows services, telemetry, and resource-hogging features. Includes gaming performance optimizations. Designed for power users with modern hardware (SSD + plenty of RAM).
 
 ## Why?
 
@@ -43,7 +43,7 @@ These scripts disable the bloat and create a scheduled task to keep it disabled.
 
 1. **Clone the repo:**
    ```powershell
-   git clone https://github.com/YOUR_USERNAME/windows-debloat.git
+   git clone https://github.com/ckdvs99/windows-debloat.git
    cd windows-debloat
    ```
 
@@ -97,6 +97,19 @@ Reverses all changes:
 - Removes scheduled task
 - Restores default settings
 
+### `gaming-optimizations.ps1`
+
+Applies gaming-specific optimizations:
+- Ultimate Performance power plan
+- Hardware GPU scheduling
+- Disables mouse acceleration
+- Network latency tweaks
+- Memory and CPU optimizations
+
+### `undo-gaming-optimizations.ps1`
+
+Reverts all gaming optimizations to Windows defaults.
+
 ## Scheduled Task
 
 The enforcement task runs:
@@ -117,6 +130,44 @@ Edit `disable-bloat-services.ps1` to customize which services to disable.
 - **WbioSrvc** - If you use fingerprint/face login
 - **TabletInputService** - If you use touch/pen input
 - **Spooler** - If you have a printer
+
+## Gaming Optimizations
+
+Run `gaming-optimizations.ps1` for additional performance tuning:
+
+```powershell
+.\scripts\gaming-optimizations.ps1
+```
+
+### What It Does
+
+| Optimization | Description | Benefit |
+|--------------|-------------|---------|
+| Ultimate Performance | Custom power plan, no throttling | Consistent FPS |
+| GPU Scheduling | Hardware-accelerated scheduling | Lower input latency |
+| Mouse Acceleration | Disabled | Precise aiming |
+| Nagle's Algorithm | Disabled | Lower network latency |
+| Memory Compression | Disabled | Less CPU overhead |
+| Visual Effects | Reduced animations/transparency | Snappier UI |
+| Fullscreen Optimizations | Disabled globally | Less stuttering |
+| Game Mode | Enabled (overlay disabled) | Priority for games |
+| Timer Resolution | Optimized for games | Better frame pacing |
+| Hibernation | Disabled | Frees 20-40GB disk space |
+| Core Parking | Disabled | All CPU cores available |
+
+### NVIDIA Users
+
+The script detects NVIDIA GPUs. For best results, also configure in NVIDIA Control Panel:
+- Power management: **Prefer maximum performance**
+- Texture filtering - Quality: **High performance**
+- Threaded optimization: **On**
+- Low Latency Mode: **Ultra** (for competitive games)
+
+### Reverting
+
+```powershell
+.\scripts\undo-gaming-optimizations.ps1
+```
 
 ## Requirements
 
