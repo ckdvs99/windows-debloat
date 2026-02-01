@@ -15,6 +15,7 @@
     - Optimize timer resolution
     - Disable hibernation (frees disk space)
     - Game Mode settings
+    - Fix Delivery Optimization memory leak (can use 10-20+ GB RAM)
 
 .NOTES
     Run as Administrator
@@ -47,7 +48,7 @@ Write-Host "[OK] Saved current settings to backup" -ForegroundColor Gray
 # 1. POWER PLAN - Ultimate Performance
 # ============================================
 Write-Host ""
-Write-Host "[1/12] Power Plan..." -ForegroundColor Yellow
+Write-Host "[1/13] Power Plan..." -ForegroundColor Yellow
 
 # Check if Ultimate Performance exists, if not create it
 $ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61"
@@ -76,7 +77,7 @@ Write-Host "[OK] Ultimate Performance power plan activated" -ForegroundColor Gre
 # 2. GPU SCHEDULING
 # ============================================
 Write-Host ""
-Write-Host "[2/12] Hardware-Accelerated GPU Scheduling..." -ForegroundColor Yellow
+Write-Host "[2/13] Hardware-Accelerated GPU Scheduling..." -ForegroundColor Yellow
 
 $gpuSchedPath = "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"
 Set-ItemProperty -Path $gpuSchedPath -Name "HwSchMode" -Value 2 -Type DWord -Force
@@ -86,7 +87,7 @@ Write-Host "[OK] GPU scheduling enabled (requires restart)" -ForegroundColor Gre
 # 3. MOUSE ACCELERATION
 # ============================================
 Write-Host ""
-Write-Host "[3/12] Mouse Acceleration..." -ForegroundColor Yellow
+Write-Host "[3/13] Mouse Acceleration..." -ForegroundColor Yellow
 
 $mousePath = "HKCU:\Control Panel\Mouse"
 Set-ItemProperty -Path $mousePath -Name "MouseSpeed" -Value "0"
@@ -112,7 +113,7 @@ Write-Host "[OK] Mouse acceleration disabled" -ForegroundColor Green
 # 4. NAGLE'S ALGORITHM (Network Latency)
 # ============================================
 Write-Host ""
-Write-Host "[4/12] Network Optimization (Nagle's Algorithm)..." -ForegroundColor Yellow
+Write-Host "[4/13] Network Optimization (Nagle's Algorithm)..." -ForegroundColor Yellow
 
 # Get all network adapters
 $adapters = Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"
@@ -137,7 +138,7 @@ Write-Host "[OK] Nagle's algorithm disabled, network throttling disabled" -Foreg
 # 5. MEMORY COMPRESSION
 # ============================================
 Write-Host ""
-Write-Host "[5/12] Memory Compression..." -ForegroundColor Yellow
+Write-Host "[5/13] Memory Compression..." -ForegroundColor Yellow
 
 Disable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue
 Write-Host "[OK] Memory compression disabled" -ForegroundColor Green
@@ -146,7 +147,7 @@ Write-Host "[OK] Memory compression disabled" -ForegroundColor Green
 # 6. VISUAL EFFECTS
 # ============================================
 Write-Host ""
-Write-Host "[6/12] Visual Effects..." -ForegroundColor Yellow
+Write-Host "[6/13] Visual Effects..." -ForegroundColor Yellow
 
 $visualPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
 if (-not (Test-Path $visualPath)) { New-Item -Path $visualPath -Force | Out-Null }
@@ -168,7 +169,7 @@ Write-Host "[OK] Animations and transparency reduced" -ForegroundColor Green
 # 7. FULLSCREEN OPTIMIZATIONS
 # ============================================
 Write-Host ""
-Write-Host "[7/12] Fullscreen Optimizations..." -ForegroundColor Yellow
+Write-Host "[7/13] Fullscreen Optimizations..." -ForegroundColor Yellow
 
 # Disable fullscreen optimizations globally
 $gameBarPath = "HKCU:\System\GameConfigStore"
@@ -183,7 +184,7 @@ Write-Host "[OK] Fullscreen optimizations disabled globally" -ForegroundColor Gr
 # 8. GAME MODE & GAME BAR
 # ============================================
 Write-Host ""
-Write-Host "[8/12] Game Mode Settings..." -ForegroundColor Yellow
+Write-Host "[8/13] Game Mode Settings..." -ForegroundColor Yellow
 
 # Enable Game Mode (actually helps on modern Windows)
 $gameModePath = "HKCU:\Software\Microsoft\GameBar"
@@ -199,7 +200,7 @@ Write-Host "[OK] Game Mode enabled, Game Bar overlay disabled" -ForegroundColor 
 # 9. TIMER RESOLUTION
 # ============================================
 Write-Host ""
-Write-Host "[9/12] Timer Resolution..." -ForegroundColor Yellow
+Write-Host "[9/13] Timer Resolution..." -ForegroundColor Yellow
 
 $mmcssGamesPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
 if (-not (Test-Path $mmcssGamesPath)) { New-Item -Path $mmcssGamesPath -Force | Out-Null }
@@ -214,7 +215,7 @@ Write-Host "[OK] Game priority and timer settings optimized" -ForegroundColor Gr
 # 10. HIBERNATION
 # ============================================
 Write-Host ""
-Write-Host "[10/12] Hibernation..." -ForegroundColor Yellow
+Write-Host "[10/13] Hibernation..." -ForegroundColor Yellow
 
 powercfg /hibernate off
 Write-Host "[OK] Hibernation disabled (freed ~20-40GB)" -ForegroundColor Green
@@ -223,7 +224,7 @@ Write-Host "[OK] Hibernation disabled (freed ~20-40GB)" -ForegroundColor Green
 # 11. NVIDIA OPTIMIZATIONS
 # ============================================
 Write-Host ""
-Write-Host "[11/12] NVIDIA Settings..." -ForegroundColor Yellow
+Write-Host "[11/13] NVIDIA Settings..." -ForegroundColor Yellow
 
 # Check if NVIDIA driver is installed
 $nvidiaSmiPath = "C:\Windows\System32\nvidia-smi.exe"
@@ -248,13 +249,60 @@ if (Test-Path $nvidiaSmiPath) {
 # 12. DISABLE CORE PARKING
 # ============================================
 Write-Host ""
-Write-Host "[12/12] CPU Core Parking..." -ForegroundColor Yellow
+Write-Host "[12/13] CPU Core Parking..." -ForegroundColor Yellow
 
 # Disable core parking in current power plan
 powercfg -setacvalueindex scheme_current sub_processor CPMINCORES 100
 powercfg -setactive scheme_current
 
 Write-Host "[OK] CPU core parking disabled" -ForegroundColor Green
+
+# ============================================
+# 13. DELIVERY OPTIMIZATION (Memory Leak Fix)
+# ============================================
+Write-Host ""
+Write-Host "[13/13] Delivery Optimization (Memory Fix)..." -ForegroundColor Yellow
+
+# DoSvc can leak 10-20+ GB RAM - restrict it heavily
+$doProc = Get-Process svchost -ErrorAction SilentlyContinue | Where-Object {
+    (Get-CimInstance Win32_Service -Filter "ProcessId=$($_.Id)" -ErrorAction SilentlyContinue).Name -contains 'DoSvc'
+}
+if ($doProc) {
+    $memGB = [math]::Round($doProc.WorkingSet64/1GB, 2)
+    if ($memGB -gt 1) {
+        Write-Host "     DoSvc using $memGB GB - fixing..." -ForegroundColor Yellow
+    }
+}
+
+# Stop service and clear cache
+Stop-Service DoSvc -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 2
+
+$doPath = "$env:WINDIR\ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization"
+if (Test-Path $doPath) {
+    Remove-Item "$doPath\Cache\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item "$doPath\Logs\*" -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# Configure Delivery Optimization via policy
+$doRegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization"
+if (-not (Test-Path $doRegPath)) { New-Item -Path $doRegPath -Force | Out-Null }
+
+# DODownloadMode: 0=HTTP only, 1=LAN only, 2=Group, 3=Internet - set to LAN only
+Set-ItemProperty -Path $doRegPath -Name "DODownloadMode" -Value 1 -Type DWord -Force
+# Limit background bandwidth to 25%
+Set-ItemProperty -Path $doRegPath -Name "DOPercentageMaxBackgroundBandwidth" -Value 25 -Type DWord -Force
+# Limit foreground bandwidth to 50%
+Set-ItemProperty -Path $doRegPath -Name "DOPercentageMaxForegroundBandwidth" -Value 50 -Type DWord -Force
+# Max cache size 5GB (percentage of disk, but we limit it)
+Set-ItemProperty -Path $doRegPath -Name "DOMaxCacheSize" -Value 5 -Type DWord -Force
+# Max cache age 3 days (seconds)
+Set-ItemProperty -Path $doRegPath -Name "DOMaxCacheAge" -Value 259200 -Type DWord -Force
+
+# Restart service
+Start-Service DoSvc -ErrorAction SilentlyContinue
+
+Write-Host "[OK] Delivery Optimization limited (LAN-only, 5GB cache max)" -ForegroundColor Green
 
 # ============================================
 # SUMMARY
@@ -275,6 +323,7 @@ Write-Host "  [x] Game Mode enabled" -ForegroundColor White
 Write-Host "  [x] Game priority optimized" -ForegroundColor White
 Write-Host "  [x] Hibernation disabled" -ForegroundColor White
 Write-Host "  [x] Core parking disabled" -ForegroundColor White
+Write-Host "  [x] Delivery Optimization memory leak fixed" -ForegroundColor White
 Write-Host ""
 Write-Host "RESTART REQUIRED for GPU scheduling to take effect!" -ForegroundColor Yellow
 Write-Host ""

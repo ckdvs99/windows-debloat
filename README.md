@@ -5,7 +5,7 @@ A collection of PowerShell scripts to disable unnecessary Windows services, tele
 ## Why?
 
 Windows 11 includes many services that:
-- **Consume excessive memory** (SysMain/Superfetch can use 50+ GB during cache rebuilding)
+- **Consume excessive memory** (SysMain/Superfetch can use 50+ GB during cache rebuilding, Delivery Optimization can leak 10-20+ GB)
 - **Cause disk I/O spikes** (Windows Search indexing, telemetry)
 - **Send telemetry data** to Microsoft
 - **Re-enable themselves** after Windows Updates
@@ -19,6 +19,7 @@ These scripts disable the bloat and create a scheduled task to keep it disabled.
 | Service | Description | Why Disable |
 |---------|-------------|-------------|
 | SysMain | Superfetch/pre-caching | Unnecessary with SSD, can cause massive memory leaks |
+| DoSvc | Delivery Optimization | P2P Windows Update sharing, known 10-20+ GB memory leak |
 | DiagTrack | Telemetry | Privacy, uses CPU/disk/network |
 | WSearch | Windows Search indexing | Causes disk spikes, use Everything instead |
 | WerSvc | Windows Error Reporting | Uploads crash data to Microsoft |
@@ -154,6 +155,7 @@ Run `gaming-optimizations.ps1` for additional performance tuning:
 | Timer Resolution | Optimized for games | Better frame pacing |
 | Hibernation | Disabled | Frees 20-40GB disk space |
 | Core Parking | Disabled | All CPU cores available |
+| Delivery Optimization | LAN-only, limited cache | Fixes 10-20+ GB memory leak |
 
 ### NVIDIA Users
 
